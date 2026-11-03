@@ -1,223 +1,94 @@
-# 🚀 Kafka Spring Cloud Stream
+# Kafka Spring Cloud Stream — analytics de pages en temps réel
 
-[![Status](https://img.shields.io/badge/Status-En%20développement-orange)](https://github.com/votre-username/kafka-spring-cloud-stream)
-[![Progress](https://img.shields.io/badge/Progress-50%25-yellow)](https://github.com/votre-username/kafka-spring-cloud-stream)
-[![Java](https://img.shields.io/badge/Java-21+-red)](https://openjdk.org/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.4-green)](https://spring.io/projects/spring-boot)
-[![Kafka](https://img.shields.io/badge/Apache%20Kafka-7.3.0-black)](https://kafka.apache.org/)
+Pipeline de streaming événementiel avec **Apache Kafka**, **Spring Cloud Stream** et **Kafka Streams**. L'application produit des événements de visite de pages et les agrège sur des fenêtres de 5 secondes. Les résultats sont affichés en direct dans un graphique alimenté par **Server-Sent Events**.
 
-## 📋 Description
+![Java](https://img.shields.io/badge/Java-21-red)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-green)
+![Spring Cloud Stream](https://img.shields.io/badge/Spring%20Cloud%20Stream-2025.0-6DB33F)
+![Kafka](https://img.shields.io/badge/Apache%20Kafka-Streams-231F20)
 
-Projet de démonstration et d'apprentissage des technologies de streaming de données avec Apache Kafka, Spring Cloud Stream et Spring Boot. Ce projet illustre la mise en place d'une architecture de streaming de données moderne et scalable.
+## Architecture du flux
 
-## 🚀 Fonctionnalités
+```
+                 pageEventSupplier (toutes les 200 ms)
+                              │
+                              ▼
+ GET /publish ──────▶  topic T3  ──▶  KStreamFunction (Kafka Streams)
+ (topic au choix)                      • filtre : durée > 100 ms
+        │                              • regroupement par page
+        ▼                              • comptage sur fenêtre de 5 s
+   topic T2                                       │
+        │                             ┌───────────┴───────────┐
+        ▼                             ▼                       ▼
+ pageEventConsumer                topic T4         state store "count-store"
+ (affiche l'événement)                                        │
+                                                              ▼
+                                            GET /analytics (SSE, chaque seconde)
+                                                              │
+                                                              ▼
+                                            index.html : graphique temps réel
+```
 
-- **Streaming de données en temps réel** : Traitement de flux de données avec Kafka
-- **Spring Cloud Stream** : Abstraction pour le développement de microservices de streaming
-- **Kafka Streams** : Traitement de données en temps réel avec Apache Kafka
-- **Architecture événementielle** : Communication asynchrone entre services
-- **Docker Compose** : Infrastructure Kafka prête à l'emploi
-- **Tests intégrés** : Tests avec Spring Cloud Stream Test Binder
-- **Monitoring et observabilité** : Suivi des flux de données
+## Ce que montre le projet
 
-## 🛠️ Technologies utilisées
+- **Programmation fonctionnelle Spring Cloud Stream** : beans `Supplier`, `Consumer` et `Function` liés à des topics Kafka par configuration
+- **Producteur à la demande** avec `StreamBridge`, vers n'importe quel topic
+- **Kafka Streams** : `filter`, `map`, `groupByKey` et agrégation sur fenêtres de temps (`TimeWindows`)
+- **Interactive Queries** : lecture du state store `count-store` depuis un contrôleur REST
+- **Streaming réactif vers le navigateur** : `Flux` de Project Reactor exposé en `text/event-stream`
+- **Infrastructure conteneurisée** : Kafka et Zookeeper avec Docker Compose
 
-- **Java 21+** - Langage principal avec les dernières fonctionnalités
-- **Spring Boot 3.5.4** - Framework principal
-- **Spring Cloud Stream 2025.0.0** - Framework de streaming
-- **Apache Kafka 7.3.0** - Plateforme de streaming distribuée
-- **Kafka Streams** - API de traitement de flux de données
-- **Spring Kafka** - Intégration Spring avec Kafka
-- **Docker Compose** - Orchestration des services Kafka
-- **Lombok** - Réduction du code boilerplate
-- **Maven** - Gestion des dépendances
+## Stack technique
 
-## 📊 État du Projet
+| Couche | Technologies |
+|---|---|
+| Langage | Java 21 (records) |
+| Framework | Spring Boot 3.5, Spring Cloud Stream 2025.0 |
+| Messaging | Apache Kafka (Confluent 7.3), Kafka Streams |
+| Temps réel | Server-Sent Events, Project Reactor |
+| Front | HTML + Smoothie Charts |
+| Infrastructure | Docker Compose |
 
-**Statut :** 🟡 En développement  
-**Progression :** 50%  
-**Dernière mise à jour :** Décembre 2024  
+## Lancer le projet
 
-### ✅ Ce qui est terminé
-- [x] Configuration de base Spring Boot 3.5.4
-- [x] Configuration Spring Cloud Stream
-- [x] Intégration Apache Kafka
-- [x] Configuration Docker Compose pour Kafka
-- [x] Dépendances Maven configurées
-- [x] Structure du projet
-- [x] Configuration Kafka Streams
-- [x] Tests avec Spring Cloud Stream Test Binder
-
-### 🚧 En cours de développement
-- [ ] Implémentation des streams de données
-- [ ] Logique de traitement des événements
-- [ ] Configuration des topics Kafka
-- [ ] Gestion des erreurs et retry
-
-### 📋 À faire
-- [ ] Exemples de streams de données
-- [ ] Tests d'intégration avec Kafka
-- [ ] Monitoring et métriques
-- [ ] Documentation des streams
-- [ ] Exemples d'utilisation
-- [ ] Optimisation des performances
-- [ ] Déploiement en production
-
-## 🚀 Installation et démarrage
-
-### Prérequis
-- Java 21 ou supérieur
-- Maven 3.6+
-- Docker et Docker Compose
-
-### Étapes d'installation
-
-1. **Cloner le projet**
-   ```bash
-   git clone [URL_DE_VOTRE_DEPOT]
-   cd kafka-spring-cloud-stream
-   ```
-
-2. **Démarrer l'infrastructure Kafka**
-   ```bash
-   docker-compose up -d
-   ```
-
-3. **Vérifier que Kafka est démarré**
-   ```bash
-   docker ps
-   # Vérifier que zookeeper et kafka-broker sont en cours d'exécution
-   ```
-
-4. **Installer les dépendances**
-   ```bash
-   mvn clean install
-   ```
-
-5. **Lancer l'application**
-   ```bash
-   mvn spring-boot:run
-   ```
-
-## 🐳 Infrastructure Docker
-
-Le projet inclut un fichier `compose.yaml` qui démarre automatiquement :
-
-- **Zookeeper** : Service de coordination pour Kafka
-- **Kafka Broker** : Serveur Kafka principal
-- **Ports exposés** : 9092 pour Kafka, 2181 pour Zookeeper
-
-### Commandes Docker utiles
+Prérequis : Java 21 ou plus, Docker.
 
 ```bash
-# Démarrer les services
-docker-compose up -d
+git clone https://github.com/erryhany/kafka-spring-cloud-stream.git
+cd kafka-spring-cloud-stream
 
-# Arrêter les services
-docker-compose down
+# 1. Démarrer Kafka et Zookeeper
+docker compose up -d
 
-# Voir les logs
-docker-compose logs -f
-
-# Redémarrer un service spécifique
-docker-compose restart kafka-broker
+# 2. Démarrer l'application
+./mvnw spring-boot:run        # Windows : mvnw.cmd spring-boot:run
 ```
 
-## 📚 Architecture du Projet
+Puis ouvrir **http://localhost:8080** : le graphique affiche en continu le nombre de visites des pages P1 et P2 sur les 5 dernières secondes.
 
-```
-src/
-├── main/
-│   ├── java/           # Code source Java
-│   └── resources/      # Configuration
-├── test/               # Tests
-└── compose.yaml        # Infrastructure Docker
-```
+## Endpoints
 
-## 🔄 Spring Cloud Stream
+| Méthode | Route | Description |
+|---|---|---|
+| GET | `/publish?name=P1&topic=T2` | Publie un événement de page sur le topic indiqué et le renvoie |
+| GET | `/analytics` | Flux SSE des comptages par page (fenêtre de 5 s), envoyé chaque seconde |
+| GET | `/` | Tableau de bord temps réel (`index.html`) |
 
-Spring Cloud Stream fournit une abstraction pour le développement de microservices de streaming :
+## Topics Kafka
 
-- **Binder** : Interface entre l'application et le système de messaging
-- **Source** : Production de messages
-- **Sink** : Consommation de messages
-- **Processor** : Traitement de messages
+| Topic | Producteur | Consommateur |
+|---|---|---|
+| `T2` | `/publish` | `pageEventConsumer` |
+| `T3` | `pageEventSupplier` | `KStreamFunction` |
+| `T4` | `KStreamFunction` | aucun (résultats agrégés) |
 
-## 📊 Kafka Streams
+## Pistes d'évolution
 
-Kafka Streams permet de :
+- Tests d'intégration avec le Test Binder et Testcontainers
+- Gestion des erreurs et dead letter topic
+- Topics aux noms explicites (`page-events`, `page-analytics`…)
+- Dockerfile pour l'application
 
-- **Traiter des flux de données** en temps réel
-- **Effectuer des agrégations** et des jointures
-- **Gérer l'état** des applications de streaming
-- **Assurer la scalabilité** et la tolérance aux pannes
+## Auteur
 
-## 🧪 Tests
-
-```bash
-# Exécuter tous les tests
-mvn test
-
-# Tests avec Spring Cloud Stream Test Binder
-mvn test -Dtest=StreamingTests
-
-# Tests d'intégration Kafka
-mvn test -Dtest=KafkaIntegrationTests
-```
-
-## 📈 Monitoring
-
-- **Kafka Manager** : Interface web pour gérer Kafka
-- **JMX Metrics** : Métriques Java Management Extensions
-- **Spring Boot Actuator** : Endpoints de monitoring (à implémenter)
-
-## 🔧 Configuration
-
-### Propriétés Kafka importantes
-
-```yaml
-spring:
-  cloud:
-    stream:
-      kafka:
-        binder:
-          brokers: localhost:9092
-          zk-nodes: localhost:2181
-      bindings:
-        input:
-          destination: input-topic
-        output:
-          destination: output-topic
-```
-
-## 📝 Contribution
-
-1. Fork le projet
-2. Créer une branche pour votre fonctionnalité
-3. Commiter vos changements
-4. Pousser vers la branche
-5. Ouvrir une Pull Request
-
-## 📄 Licence
-
-Ce projet est sous licence [MIT](LICENSE).
-
-## 👨‍💻 Auteur
-
-**Mourad** - Développeur Full Stack
-
-## 📞 Support
-
-Pour toute question ou suggestion, n'hésitez pas à :
-- Ouvrir une issue sur GitHub
-- Me contacter directement
-
-## 🔗 Ressources utiles
-
-- [Spring Cloud Stream Documentation](https://spring.io/projects/spring-cloud-stream)
-- [Apache Kafka Documentation](https://kafka.apache.org/documentation/)
-- [Kafka Streams Documentation](https://kafka.apache.org/documentation/streams/)
-
----
-
-**Note :** Ce projet est actuellement en développement actif. Les fonctionnalités peuvent évoluer et certaines parties peuvent ne pas être encore implémentées.
+**Mourad Erryhany** — Développeur Java / Spring Boot · [GitHub](https://github.com/erryhany)
