@@ -36,7 +36,7 @@ Pipeline de streaming événementiel avec **Apache Kafka**, **Spring Cloud Strea
 - **Kafka Streams** : `filter`, `map`, `groupByKey` et agrégation sur fenêtres de temps (`TimeWindows`)
 - **Interactive Queries** : lecture du state store `count-store` depuis un contrôleur REST
 - **Streaming réactif vers le navigateur** : `Flux` de Project Reactor exposé en `text/event-stream`
-- **Infrastructure conteneurisée** : Kafka et Zookeeper avec Docker Compose
+- **Infrastructure conteneurisée** : Kafka (mode KRaft) et Kafka UI avec Docker Compose
 
 ## Stack technique
 
@@ -44,27 +44,41 @@ Pipeline de streaming événementiel avec **Apache Kafka**, **Spring Cloud Strea
 |---|---|
 | Langage | Java 21 (records) |
 | Framework | Spring Boot 3.5, Spring Cloud Stream 2025.0 |
-| Messaging | Apache Kafka (Confluent 7.3), Kafka Streams |
+| Messaging | Apache Kafka 3.8 (KRaft, sans Zookeeper), Kafka Streams |
 | Temps réel | Server-Sent Events, Project Reactor |
 | Front | HTML + Smoothie Charts |
-| Infrastructure | Docker Compose |
+| Infrastructure | Docker Compose, Kafka UI |
 
 ## Lancer le projet
 
-Prérequis : Java 21 ou plus, Docker.
+Prérequis : **Java 21** ou plus, Docker.
+
+### 1. Démarrer Kafka avec Docker Compose
+
+Le fichier [`docker-compose.yml`](docker-compose.yml) lance un broker Kafka prêt à l'emploi et une interface web pour l'observer :
 
 ```bash
 git clone https://github.com/erryhany/kafka-spring-cloud-stream.git
 cd kafka-spring-cloud-stream
-
-# 1. Démarrer Kafka et Zookeeper
 docker compose up -d
+```
 
-# 2. Démarrer l'application
+| Service | Adresse |
+|---|---|
+| Kafka (broker) | `localhost:9092` |
+| Kafka UI (topics et messages) | http://localhost:8090 |
+
+### 2. Démarrer l'application
+
+```bash
 ./mvnw spring-boot:run        # Windows : mvnw.cmd spring-boot:run
 ```
 
-Puis ouvrir **http://localhost:8080** : le graphique affiche en continu le nombre de visites des pages P1 et P2 sur les 5 dernières secondes.
+Puis ouvrir **http://localhost:8080** : le graphique affiche en continu le nombre de visites des pages P1 et P2 sur les 5 dernières secondes. Dans Kafka UI, les topics `T2`, `T3` et `T4` se remplissent en temps réel.
+
+Si le port 8080 est déjà pris : `./mvnw spring-boot:run -Dspring-boot.run.arguments=--server.port=8081`.
+
+Arrêt de Kafka : `docker compose down`.
 
 ## Endpoints
 
